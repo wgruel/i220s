@@ -1,0 +1,47 @@
+
+/*
+  some header information... 
+*/
+header {
+  padding: 80px;
+  text-align: center;
+  background: #229fa9;
+}
+
+header h1 {
+  color: white;
+}
+
+main {
+  margin: 20px;
+}
+
+h1 {
+    margin: 30px 0px 30px 0px;
+}
+
+.btn-primary {
+  background-color: #229fa9
+}
+
+.container .row {
+    margin-bottom: 5px;
+}
+
+/*
+  Custom styles for the message box that shows errors or other messages
+*/
+.message-box {
+    margin-top: 30px;
+}
+
+/*
+  a not so beautiful way to "exclude" the select menus from validation
+  to be more specific: they are checked but we take the style attributes from
+  the original bootstrap template to pretend that the validation has not
+  taken place...
+*/
+.custom-select.is-valid, .was-validated .custom-select:valid {
+  background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right .75rem center/8px 10px;
+  border: 1px solid #ced4da;
+  border-radius: .25rem;}
