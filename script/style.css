@@ -1,6 +1,6 @@
 
 /*
-  some header information... 
+  some header information...
 */
 header {
   padding: 80px;
@@ -24,8 +24,8 @@ h1 {
   background-color: #229fa9
 }
 
-.container .row {
-    margin-bottom: 5px;
+.row {
+    margin-bottom: 15px;
 }
 
 /*

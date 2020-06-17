@@ -81,7 +81,7 @@ We want to process this input now. Therefore, we put some PHP to the top of the 
 
 ` isset() ` checks if a variable is set or not. 
 
-` echo $_GET['phrase1'] ` writes the content that has been transmitted to the page and that is stored in the GET-variables 'phrase1' field to the screen. 
+` echo $_GET['phrase_01'] ` writes the content that has been transmitted to the page and that is stored in the GET-variables 'phrase_01' field to the screen. 
 
 
 ## Save the input to a file
@@ -108,8 +108,6 @@ $text = urldecode($text);
 
 ## Reading the phrases from a file
 
-We will create a new file to read all the phrases: phrasesList.php.
-
 We add the following code to the top of the file in order to read the contents of the file:
 
 ```
@@ -135,7 +133,7 @@ In case we want to add new phrases, we can just change the way PHP stores data t
 
 Check it out...
 
-If you open the phrase_list.php file, you will notice that the whole content is written in one line. This is probably not what we want. In order to create multiple lines, we first add a line end to each of the new phrases we enter. This is done by adding `"\n"` to the string we want to put in the file. In file.txt, we already see the difference - but not in the HTML-file. There are multiple ways to fix this. The easiest is to just put a `<pre>` tag around the text. It looks not so beautiful.  
+If you open the file, you will notice that the whole content is written in one line. This is probably not what we want. In order to create multiple lines, we first add a line end to each of the new phrases we enter. This is done by adding `"\n"` to the string we want to put in the file. In file.txt, we already see the difference - but not in the HTML-file. There are multiple ways to fix this. The easiest is to just put a `<pre>` tag around the text. It looks not so beautiful.  
 
 ## Reading the content line by line
 
@@ -311,9 +309,22 @@ I use the "echo" command to output some HTML-text. The colspan-attribute indicat
 
 Of course, we don't want to enter data via PHPMyAdmin but we want the user to enter the data - as we already saw this, we will just replace writing to a file with writing to a database ...
 
+```
+      // put together the message that is to be saved. 
+      $text = $_GET['phrase_01'] . " " . $_GET['phrase_02'] . " " . $_GET['phrase_03'] . "\n";
+      $name = $_GET['nameField'];
+      // write info to a database
+      // create sql-statements
+      $stmt = "INSERT INTO `phrases` (`id`, `phrase`, `name`) VALUES (NULL, '" . $text . "', '" . $name . "');";
+      // execute statement
+      $result = $link->query($stmt);
+
+```
+
+
 ## Put DB configuration into config file
 
-We put all the database configuration in the config file and replace the stuff at the beginning of phrases_list. Put this code into config.php:
+We put all the database configuration in the config file and replace the stuff at the beginning of our file. Put this code into config.php:
 
 ```
   // DB configuration
@@ -329,3 +340,333 @@ This allows us to use the database connection in different files. If we want to 
 In phrase_add.php, we now replace the file_put_contents part with a database specific part. We want to send a query to the DB that saves data in the database.
 
 
+
+
+<!--
+## Mailing the phrase to someone
+
+We might want to mail that phrase to somebody. What we want to do is:
+- add a textfield to phrase_add.php
+- use mail-function after we have stored the contents...  
+
+This only works on a webserver - and is of course very bad style... (no error handling, open to everybody, ... not recommended to use it like that...)
+
+
+```
+      $mailSuccess = mail(urldecode($_GET['email']), "Our Message", $text);
+
+```
+
+Or with a little more details...
+
+```
+    if (isset($_GET['email'])){
+      $to      = urldecode($_GET['email']);
+      $subject = 'I say YES! to...';
+      $message = $text;
+      $headers = 'From: internet2@hdmy.de' . "\r\n" .
+          'Reply-To: internet2@hdmy.de' . "\r\n" .
+          'X-Mailer: PHP/' . phpversion();
+
+      $mailSuccess = mail($to, $subject, $message, $headers);      
+
+      /*
+      // if you want to do some rudimentary error handling...   
+      if (!$mailSuccess){
+        echo "mail not sent";
+      }
+      else {
+        echo "mail sent to: " . $to;
+      }
+      */
+    }
+
+```
+
+
+We can also switch the mailing functionality on and off. We do that by adding a variable to the config file.
+
+```
+// switch that to true if you want to do the mailing stuff...
+$mailfun = false;
+```
+
+We then have to check in our application if mailfun is true or false:
+```
+    if ($mailfun == true){
+      // email related stuff...
+      if (isset($_GET['email'])){
+          // ....
+      }
+    }
+```
+
+The e-mail field should also just be displayed in case $mailfun is true:
+```
+        <?php
+        if ($mailfun == true){
+        ?>
+        <div class="form-group">
+            <label for="email">Send this message to:</label>
+            <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com">
+        </div>    
+        <?php    
+        }
+        ?>
+```
+-->
+-
+
+
+# Being hacked...
+
+So far, we have build a pretty straight forward solution that makes it possible to enter a phrase and to display it. Try to call the phrases_add.php file with the following parameters:
+
+```
+index.php?btn-save=1&phrase_01=SomeReallyBadWordsLikeF****&phrase_02=MoreBadwords&phrase_03=SuperBadWords&nameField=Some%20Bad%20Name
+
+(in my case that is http://localhost/i220s/index.php?btn-save=1&phrase_01=SomeReallyBadWordsLikeF****&phrase_02=MoreBadwords&phrase_03=SuperBadWords&nameField=Some%20Bad%20Name)
+
+```
+Now check the phrases_read.php
+
+# What to do?
+Of course, we want to avoid that somebody publishes bad words... We can do many things: 
+- Change the form submission from GET to POST (better, but still hackable)
+- Only allow certain words (Create array with bad words and compare input with these words)
+- Create an approval process
+- Delete inappropriate content manually
+
+The easiest way is to manually delete inapproriate content. This can of course be achieved by simply accessing the database. If you don't have access to the database or don't want do give access to the database to your moderators/editors, a small admin interface might work ... 
+
+
+# Creating an admin interface
+To create an administration interface, we create a new folder called "admin". We put all the admin files into that folder. We can even password protect this folder. There is a multitude of options to do that: 
+- A method that comes with your appache-server is called .htaccess. More information can be found here: http://www.htaccesstools.com/articles/password-protection/
+- You can implement a user management 
+- You can hardcode a password into your code
+
+```
+
+if (!isset($_GET['password']) || $_GET['password'] != "GEHEIM"){
+	die("Passwort incorrect");
+}
+
+```
+
+We can also use the Session-Variable in order to make sure that our users are authenticated. A session is a way to store information (in variables) that can be used across multiple pages during one browser sessin (i.e. as long as the browser is not closed). A session is started with the `session_start()` function. `$_SESSION` is an array that is globally available.
+
+On every site that we want to protect, we include the file `protect.php` at the very top (to make sure that all functionality is only accessible when user is logged in. Header redirects have to be executed before any output is created). For `index.php` that means: 
+
+```
+<?php
+
+  include('protect.php');
+  include('../config.php');
+  /// ... rest of the code follows here
+```
+
+`protect.php` containts a very small snippet of code: 
+
+```
+
+<?php
+  // session_start() creates a session
+  session_start(); 
+  // check if user is authenticated by checking $_SESSION
+  if (empty($_SESSION['authenticated'])){
+    // redirect to login page
+    header('Location: login.php');
+    // exit script
+    exit; 
+  }
+
+?>
+
+```
+
+On a special login site (`login.php`), we ask the suser to enter his password: 
+
+```
+
+        <h1>Please Login!</h1>
+        <form method="POST">
+        <input type="password" name="passwd">
+        <button type="submit" class="btn btn-primary" value="1" name="btn-login">Login</button>
+        </form>
+```
+
+After having submitted the password, we check if the password is correct. We put this piece of code to the top of `login.php`: 
+
+```
+  session_start(); 
+
+  // Hardcoded password. Neither hashed nor associated to a user --> not really safe. 
+  // But comes with a little bit of protection ;-)
+  $password = "Geheim!";
+
+  // page to redirect to after successful login... 
+  // in this case static - always index.php. Might make sense to adapt this, 
+  // so that we always redirect to the page that has originally been called... 
+  $redirectPage = "index.php";
+
+  // Variable that is used to store and display any error messages....
+  // will not have any impact if remains empty
+  $errorText = "";
+
+  // check if login button was pressed... 
+  if (isset($_POST['btn-login'])){
+    // password check... 
+    if (!empty($_POST['passwd'] && $_POST['passwd'] == $password)){      
+
+        $_SESSION['authenticated'] = true; 
+        header('Location: ' . $redirectPage); 
+        exit; 
+    }
+    else {
+        $errorText = "Password incorrect. Evil.";
+    }
+  }
+
+  // Logout if user uses this page and has not entered a password... 
+  unset ($_SESSION['authenticated']); 
+
+```
+
+
+
+# The admin dashboard: List all phrases 
+Our first admin dashboard only just of the list of phrases that we already know. We simply copy "phrase_read.php" to the admin folder. We rename it to "index.php". 
+
+If we run our script ("admin/index.php"), we will get some errors that look like: 
+```
+Warning: include(config.php): failed to open stream: No such file or directory in 
+/Applications/XAMPP/xamppfiles/htdocs/i220s/admin/index.php on line 2
+
+```
+In order to fix that, we will have to adapt the include statements. Instead of `include('config.php');`, we include the config file in the superordinate folder `include('../config.php');`
+
+We should now see the list of phrases again. 
+
+# Adding a delete button
+We want to create a delete button for each entry in  our database. That is why we add one more column in our while loop that loops through the sentences in our index.php: 
+```
+while ($row = mysqli_fetch_row($result)){
+	echo "<tr>";
+	echo "<td>" . $row[0] . "</td>";
+	echo "<td>" . $row[1] . "</td>";
+	echo "<td>" . $row[2] . "</td>";
+	echo "<td><a href=''>delete</a></td>";
+	echo "</tr>";
+}
+```
+
+To actually delete a phrase, we will have to create an SQL-statement and execute it. The SQL-Statement will look like: `DELETE FROM ``phrases` WHERE ``ID`` = 12;`. The ID should be set dynamically (we want to delete the entry with the respective ID from the database). That means, we will have to pass it to the statement in some way.
+
+We adapt the link of the table cell as follows: 
+
+```
+	echo "<td><a href='?delete-id=" . $row[0] . "'>delete</a></td>";
+
+```
+
+After reloading the page, we can click this link - it will reload the current page and submit a GET-parameter called delete-id. We can now use that delete-id. 
+
+At the top of the index.php, we check if the delete-id parameter is set. If it is set, we create the SQL-statement and simply erase the row from our database. We put the check after the DB-connection but before the SELECT statement: 
+
+```
+  // connect to database
+  $link = mysqli_connect("localhost", "root", "", "i2_20s_phrases");
+
+  if (isset($_GET['delete-id'])){
+    $db_query = "DELETE FROM `phrases` WHERE `ID` = " . $_GET['delete-id'] ;
+    $delete_result = $link->query($db_query);     
+    // The following line shows how many rows were delted... 
+    // Can be used for error handling... 
+    // echo $link->affected_rows; 
+  } 
+
+  // query database
+  $result = $link->query('SELECT * FROM phrases');
+
+```
+
+If we click on the delete links in our list, we should be able to delete that line now... As we query the database (SELECT * FROM phrases) after having deleted the row, we will see the list without the line that we just deleted. 
+
+# Editing data
+We might not only delete data. Editing is also an option to deal with inappropriate data. E.g., we can manually replace all inappropriate words with the string "MOOO". 
+
+Similar to adding the delete-link, we add a link to an edit page:
+```
+	echo "<td><a href='phrase_edit.php?edit-id=" . $row[0] . "'>edit</a></td>";
+
+```
+
+We have to create a page called "phrase_edit.php" now. We can use the phrase_add.php as a template (copy it to the admin folder and change the includes as desribed before). It probably makes sense to delete the PHP part at the top of the page first. 
+
+We also replace the content in our form: We don't want to have a select menu, but a textbox. We want to make sure that the edit-id that we received from the previous page will be used to update our data. We use a hidden input field and store the value of $_GET['edit-id'] in that field.
+
+```
+            <form>
+                <input type="hidden" name="edit-id" value="<?php echo $_GET['edit-id']?>" >
+                <input type="text" name="phrase" value=""></input>
+                <button type="submit" name="btn-save" value="1">Update</button>                
+            </form>
+```
+
+After we submit the form, we want to put the value of the text field into the database. As we did in the phrase_add.php, we check, if the button was pressed. If so, we create a database-statement. This time, we need the UPDATE statement. Update has the following Syntax 
+
+```
+UPDATE table_name
+SET column1=value, column2=value2,...
+WHERE some_column=some_value 
+
+```
+
+If we put this statement into the context ouf our script, it looks like: 
+
+
+```
+  include('../config.php');
+  // initialize variable $update_result
+  $update_result = 0;
+  $link = mysqli_connect("localhost", "root", "", "i2_20s_phrases");
+  if (isset($_GET['btn-save'])){
+    $db_query = "UPDATE `phrases` SET `text` = '" . $_GET['phrase'] . "' WHERE `ID` = " . $_GET['edit-id'] ;
+     // echo $db_query; 
+     $update_result = $link->query($db_query);     
+  }
+  
+```
+
+The script knows which dataset to update by using the edit-id that we submitted via the hidden form field.
+
+So far, the update is a little inconvenient as we don't know the text the user entered before. In order to change that, we want to read the record with the ID edit-id and show its text in the text-field. To get that text, we query the database again and store the phrase in the variable $text: 
+
+```
+  $db_query = "SELECT * FROM `phrases` WHERE `ID` = " . $_GET['edit-id'] ;
+  $result = $link->query($db_query); 
+  $row = mysqli_fetch_row($result); 
+  $text = $row[1];
+
+```
+
+We only have to set the value of the form's text field to the value of $text, now. 
+
+```
+<input type="text" name="phrase" value="<?php echo $text ?>"></input>
+				
+```
+
+If our update was successful, we might want to show this to the user. We put a litte alert-div on our page: 
+
+```
+        <?php if ($update_result == 1){ ?>
+          <div class="alert alert-primary" role="alert">
+            Update Success! 
+            <a href="index.php">Back to dashboard</a>
+          </div>
+        <?php } ?>
+```
+
+That's basically it. We created a phrase-generator application that can create, read, update and delete records in a database. Nice!

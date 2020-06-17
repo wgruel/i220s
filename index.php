@@ -6,17 +6,21 @@
   $errorText = "";
 
   // Initialize empty statements array. Will be used to
-  // store the statements... 
+  // store the statements... E
   $statements = array();
 
   // if button was pressed (user wants to save something... )
   if(isset($_GET['btn-save'])){
     // make sure user has entered all phrase-information correctly
     if($_GET['phrase_01'] != "" && $_GET['phrase_02'] != "" && $_GET['phrase_03'] != "" && !empty($_GET['nameField'])){
-      // put together the message that is to be savet. For now, we save name and phrases in one statement
-      $text = $_GET['nameField'] . ": " . $_GET['phrase_01'] . " " . $_GET['phrase_02'] . " " . $_GET['phrase_03'] . "\n";
-      // write info to a file
-      file_put_contents($filename, $text, FILE_APPEND);
+      // put together the message that is to be saved. 
+      $text = $_GET['phrase_01'] . " " . $_GET['phrase_02'] . " " . $_GET['phrase_03'] . "\n";
+      $name = $_GET['nameField'];
+      // write info to a database
+      // create sql-statements
+      $stmt = "INSERT INTO `phrases` (`id`, `phrase`, `name`) VALUES (NULL, '" . $text . "', '" . $name . "');";
+      // execute statement
+      $result = $link->query($stmt);
     }
     // user has not provided all required information... (check performed on server ...)
     else {
@@ -24,12 +28,6 @@
     }
   }
 
-
-  // connect to database
-  // $link is the connection to the database and will be used to access database
-  $link = mysqli_connect("localhost", "root", "", "i2_20s_phrases");
-  // If an error occurs, we want to show that. Looks ugly, but works...
-  echo mysqli_error($link);
 
   // we handle the database in the header, so things are less cluttered...
   // we can do this in a way that is more structured - but not at this point in time .
@@ -116,7 +114,6 @@
         <div class="row">
           <div class="col-md-4">
             <div class="form-group">
-              <label for="nameField" class="control-label">Name</label>
               <input type="text" class="form-control" id="nameField" name="nameField" placeholder="‘Max Mustermann‘ - Wirklich?!" required>
               <!--
                 the next two divs are only shown after form validation.
