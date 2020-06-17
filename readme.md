@@ -125,7 +125,7 @@ In the HTML-Part, we just echo the content of $text in order to put the file con
 
 ## Adding more phrases.
 
-In case we want to add new phrases, we can just change the way PHP stores data to the file. Right now, it overwrites the file, whenever we submit the form. By adding the parameter FILE_APPEND to the function call in phrases_add.php, new content will be added at the end of the file $filename.
+In case we want to add new phrases, we can just change the way PHP stores data to the file. Right now, it overwrites the file, whenever we submit the form. By adding the parameter FILE_APPEND to the function call in index.php, new content will be added at the end of the file $filename.
 
 ```
     file_put_contents($filename, $text, FILE_APPEND);
@@ -337,8 +337,20 @@ We put all the database configuration in the config file and replace the stuff a
 ```
 This allows us to use the database connection in different files. If we want to change anything, we only have to do this in one location.
 
-In phrase_add.php, we now replace the file_put_contents part with a database specific part. We want to send a query to the DB that saves data in the database.
+In our PHP-File, we now replace the file_put_contents part with a database specific part. We want to send a query to the DB that saves data in the database.
 
+```
+      // put together the message that is to be saved. 
+      $text = $_GET['phrase_01'] . " " . $_GET['phrase_02'] . " " . $_GET['phrase_03'] . "\n";
+      $name = $_GET['nameField'];
+      // write info to a database
+      // create sql-statements
+      $stmt = "INSERT INTO `phrases` (`id`, `phrase`, `name`) VALUES (NULL, '" . $text . "', '" . $name . "');";
+      // execute statement
+      $result = $link->query($stmt);
+
+
+```
 
 
 
@@ -420,7 +432,7 @@ The e-mail field should also just be displayed in case $mailfun is true:
 
 # Being hacked...
 
-So far, we have build a pretty straight forward solution that makes it possible to enter a phrase and to display it. Try to call the phrases_add.php file with the following parameters:
+So far, we have build a pretty straight forward solution that makes it possible to enter a phrase and to display it. Try to call the index.php file with the following parameters:
 
 ```
 index.php?btn-save=1&phrase_01=SomeReallyBadWordsLikeF****&phrase_02=MoreBadwords&phrase_03=SuperBadWords&nameField=Some%20Bad%20Name
