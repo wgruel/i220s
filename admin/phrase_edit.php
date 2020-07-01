@@ -1,6 +1,7 @@
 <?php
   include('protect.php');
   include('../config.php');
+  include('../functions.php');
 
   // Variable that is used to store and display any error messages....
   // will not have any impact if remains empty
@@ -14,16 +15,15 @@
     
     $phrase = $_GET['phrase'];
     $address = $_GET['address'];
-    // set lat and lng to 0 - will be updated later...
-    $lat = 0.0;
-    $lng = 0.0;
  
+    $location = geocode($address, $api_key); 
+
     // we create an update statement...
     $stmt = "UPDATE `phrases` SET 
         `phrases`.`phrase` = '" . $phrase . "',      
         `address` = '" . $address . "',
-        `lat` = '" . $lat . "',
-        `lng` = '" . $lng . "'  
+        `lat` = '" . $location[0] . "',
+        `lng` = '" . $location[1] . "'  
         WHERE id = " . $_GET['edit-id']; 
 
     // ... and execute it... 

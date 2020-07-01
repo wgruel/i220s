@@ -975,3 +975,72 @@ If we want to be a little more crazy, we can also create an "infowindow" that is
 ```
 
 If we want to put the map into the header of the file, we might want to remove the padding around the header: `<header style="padding: 0px">`. We might also want to get rid of the message "Use ... to scroll and zoom", so we add one parameter to the instantiation of the map: `gestureHandling: 'greedy' `
+
+## A little bit or refactoring
+We also want to use the Geocoding functionality in our `phrase_edit.php`. As we don't want to just copy and paste the code, we will put the code to a function and store this function in a separate file. We create a file called `functions.php` in our main folder. 
+
+We take the geocode functioality and put it into a function within that file: 
+
+```
+      
+<?php
+
+    function geocode($address, $api_key){
+      $lat = 0.0;
+      $lng = 0.0;  
+
+      // call Google Maps API in order to get lattitude and longitude... 
+      $maps_url = 'https://' .
+            'maps.googleapis.com/' .
+            'maps/api/geocode/json' .
+            '?address=' . urlencode($address) . 
+            '&key=' . $api_key;
+
+      // call the maps url ("open file") and read result as JSON      
+      $maps_json = file_get_contents($maps_url);
+      // convert JSON to an array, so we can deal with it more easily
+      $maps_array = json_decode($maps_json, true);
+
+      $lat = $maps_array['results'][0]['geometry']['location']['lat'];
+      $lng = $maps_array['results'][0]['geometry']['location']['lng'];
+
+    
+      return(array($lat, $lng));
+      
+    }
+
+?>
+
+```
+
+In our index.php, we put `include('functions.php');` after the inclusion of `config.php`. To call the function and store the resutls in an array called `$location`, we just use `$location = geocode($address, $api_key);`. We also have to adapt our INSERT statement, so it looks like:
+
+```
+      $location = geocode($address, $api_key); 
+
+      // write info to a database
+      // create sql-statements
+      $stmt = "INSERT INTO `phrases` (`id`, `phrase`, `name`, `address`, `lat`, `lng`) 
+	  			VALUES (NULL, '" . $text . "', '" . $name . "' ,'" . $address . "' ,'" . $location[0] . "' ,'" . $location[1] . "')";
+      // execute statement
+      $result = $link->query($stmt);
+
+```
+
+In the admin's `phrase_edit.php`, we want to use this function, too. We also include the `functions.php`. Right before we create the UPDATE statement, we call the function. Again, we also have to adapt the UPDATE statement: 
+
+```
+
+    $location = geocode($address, $api_key); 
+
+    // we create an update statement...
+    $stmt = "UPDATE `phrases` SET 
+        `phrases`.`phrase` = '" . $phrase . "',      
+        `address` = '" . $address . "',
+        `lat` = '" . $location[0] . "',
+        `lng` = '" . $location[1] . "'  
+        WHERE id = " . $_GET['edit-id']; 
+
+```
+
+
