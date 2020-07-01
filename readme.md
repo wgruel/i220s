@@ -352,7 +352,7 @@ In our PHP-File, we now replace the file_put_contents part with a database speci
 
 ```
 
-
+Git: 849e38f
 
 <!--
 ## Mailing the phrase to someone
@@ -683,6 +683,7 @@ If our update was successful, we might want to show this to the user. We put a l
 
 That's basically it. We created a phrase-generator application that can create, read, update and delete records in a database. Nice!
 
+Git: 8f53aef
 
 ## Use Google Maps API
 
@@ -729,7 +730,7 @@ We also change the `phrase_edit.php` in the admin folder:
  
     // we create an update statement...
     $stmt = "UPDATE `phrases` SET 
-        `phrases`.`phrase` = '" . $phase . "',      
+        `phrases`.`phrase` = '" . $phrase . "',      
         `address` = '" . $address . "',
         `lat` = '" . $lat . "',
         `lng` = '" . $lng . "'  
@@ -747,8 +748,52 @@ We also add an address-field to the form. If an adress has been entered, we disp
         </div>
 ```
 
-## Google-Maps
-What we want to do next is to display the map on the edit page... 
+Git: abefd2d
 
-We will compute lat and lng with the help of the Google Maps API. Therefore, we want to create an API call that looks like:  
-`https://maps.googleapis.com/maps/api/geocode/json?address=Nobelstr.+10%2C+Stuttgart&key=YOUR_API_KEY`
+## Google-Maps
+What we want to do next is to display a map on our main page. We will have to do a couple of things: 
+- get a Google Maps API Key in order to actually use the Google APIs
+- Translate the address entered by the users into lattitude and longitude
+- Embedd a map on the page
+- Create Javascript with the help of PHP in order to show all phrases on the map... 
+
+### Get an API-Key
+To use the Google APIs, you need an API-key. The key can be obtained by pressing "get a key" at the top of this page:  https://developers.google.com/maps/documentation/javascript/. 
+
+
+We copy the API key and store it in our config.php file (`$api_key=YOUR_API_KEY`).
+
+
+### Geocode address that has been entered by the user
+
+We will compute lat and lng with the help of the Google Maps API. Therefore, we want to create an API call that looks like: `https://maps.googleapis.com/maps/api/geocode/json?address=Nobelstr.+10%2C+Stuttgart&key=YOUR_API_KEY`. 
+
+We have to do a little bit of cleaning of the address as no spaces are allowed in an URL. To do that, we use `urlencode($address)`. That means, after initlalizing lat and lng, we enter the following code: 
+```
+  $maps_url = 'https://' .
+            'maps.googleapis.com/' .
+            'maps/api/geocode/json' .
+            '?address=' . urlencode($address) . 
+			&key=' . $api_key;
+```
+To get the results, we use the function `file_get_contents`. The result is a JSON-Object that we want to decode it into an array to deal with it in an easy way in PHP. 
+```
+      $maps_url = 'https://' .
+            'maps.googleapis.com/' .
+            'maps/api/geocode/json' .
+            '?address=' . urlencode($address) . 
+            '&key=' . $api_key;
+      $maps_json = file_get_contents($maps_url);
+      $maps_array = json_decode($maps_json, true);
+
+
+
+```
+$maps_array is an array that we can walk through. We get the lat and lng by accessing the first element of results element. This has an element called geometry with an object called location. Location has data about lat and lon. 
+```
+$lat = $maps_array['results'][0]['geometry']['location']['lat'];
+$lng = $maps_array['results'][0]['geometry']['location']['lng'];
+
+```
+Using the same update statement than before, we don't have to do anything special to store lat and lng in our database...  
+

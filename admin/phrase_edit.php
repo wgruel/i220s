@@ -20,7 +20,7 @@
  
     // we create an update statement...
     $stmt = "UPDATE `phrases` SET 
-        `phrases`.`phrase` = '" . $phase . "',      
+        `phrases`.`phrase` = '" . $phrase . "',      
         `address` = '" . $address . "',
         `lat` = '" . $lat . "',
         `lng` = '" . $lng . "'  
