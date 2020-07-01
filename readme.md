@@ -786,8 +786,6 @@ To get the results, we use the function `file_get_contents`. The result is a JSO
       $maps_json = file_get_contents($maps_url);
       $maps_array = json_decode($maps_json, true);
 
-
-
 ```
 $maps_array is an array that we can walk through. We get the lat and lng by accessing the first element of results element. This has an element called geometry with an object called location. Location has data about lat and lon. 
 ```
@@ -797,3 +795,183 @@ $lng = $maps_array['results'][0]['geometry']['location']['lng'];
 ```
 Using the same update statement than before, we don't have to do anything special to store lat and lng in our database...  
 
+Git: 12a15bc
+
+### Embedd a map
+There are several options to display a map. For more details check https://developers.google.com/maps/web/. We use the Javascript method. 
+
+To embed the map, we first create a div called "map":
+```
+  <div id ="map" style="width: 100%; height: 400px">
+  </div>
+```
+Then, we enter some Javascript to the bottom of the page:
+```
+<script>
+function initMap() {
+  var loc = {lat: 48.7412561, lng: 9.1008994};
+  var map = new google.maps.Map(document.getElementById('map'), {
+	zoom: 14,
+	center: loc
+  });
+  var marker = new google.maps.Marker({
+	position: loc,
+	map: map
+  });
+}
+</script>
+<script async defer
+src="https://maps.googleapis.com/maps/api/js?key=[YOUR_API_KEY]&callback=initMap">
+</script>
+```
+This will show a map with a high zoom-level in the middle of the ocean. We have to change the lat and lng attributes of the loc-object. Just play with lat and lng and you will find out how this works... 
+
+### Show location of all phrases on the map... 
+We want display all the phrases and their locations on the map. This can be done in several ways that require creating Javascript-Output with the help of PHP. We can just use PHP to write Javascript code. And that's what we do. The required information about the location is stored database... 
+
+In order to keep things easy to understand, we loop the database results in the header and save all information in a `$phrases` Array. After querying the database for all phrases (`"SELECT * FROM phrases"`), we store all information in an array that consists of arrays with the respective rows from the database:
+
+```
+  // array to store all phrases... 
+  $phrases = array(); 
+  if ($result->num_rows > 0){
+    while ($row = mysqli_fetch_row($result)){    
+      $phrase = array(); 
+      // fill phrase array with content from database
+      // would be nicer to do this in an object, but we haven't 
+      // talked about objects, yet. 
+      $phrase['id'] = $row[0]; 
+      $phrase['text'] = $row[1]; 
+      $phrase['name'] = $row[2];
+      $phrase['address'] = $row[3];  
+      $phrase['lat'] = $row[4];       
+      $phrase['lng'] = $row[5];       
+      // add phrase to phrases array
+      array_push($phrases, $phrase); 
+    }
+  }
+
+```
+
+We adapt the area that has been used to display the table rows accordingly:
+
+```
+          <?php
+          // use $reslut variable from PHP head of file...
+          if (count($phrases) > 0){
+              // get data from database line by line.
+              // each line will be stored in $row
+              // access to $row elements via index (0 for first element, 2 for third element)
+              foreach($phrases as $phrase) {
+                echo "<tr>\n";
+                echo "<td>" . $phrase['id'] . "</td>\n";
+                echo "<td>" . $phrase['text'] . "</td>\n";
+                echo "<td>" . $phrase['name'] . "</td>\n";
+                echo "<td>" . $phrase['address'] . "</td>\n";
+                echo "<td>" . $phrase['lat'] . "</td>\n";
+                echo "<td>" . $phrase['lng'] . "</td>\n";
+                echo "</tr>";
+              }
+          }
+          else {
+              echo "<tr><td colspan='6'>No data found</td></tr>";
+          }
+          ?>
+
+```
+
+Back to the part where we read data from the database into the lat/lng fields of the `$phrase` variable. There might be cases, where lattitude and longitude were not stored (e.g. because the user has not provided the information or because the location could not be found). We want to make sure the variable has a defined content, so we check if the rows are empty - if so, we set the content to 0.0. 
+
+```
+      if (!empty ($row[4])) {
+        $phrase['lat'] = $row[4]; 
+      }
+      else {
+        $phrase['lat'] = 0.0; 
+      }
+      if (!empty ($row[5])) {
+        $phrase['lng'] = $row[5]; 
+      }
+      else {
+        $phrase['lng'] = 0.0; 
+      }    
+```
+
+Then, we can create Javascript using PHP. We just ouptut some Javascript with the help of PHP. 
+We create a Javascript array that contains the phrase, the latitude and the longitude. We add this array to the locations array. We have to do this in the HTML part of the file and before we initialize the map.
+Optional: If we have stored new lines in the DB this might lead to an error. That is why replace all occurances of \n with an empty string (str_replace). Then, that looks like:
+
+```
+      echo "<script>";
+      echo "var locations = new Array();\n";
+      foreach ($phrases as $phrase){
+        echo "locations.push(['" . str_replace("\n", "", $phrase['text']) . "', " . $phrase['lat'] . " , " . $phrase['lng'] . "]);\n";
+      }
+      echo "</script>"; 
+    ?>
+
+```
+
+You can check if the script works: Displaying the source of the page should now create some Javascript like: 
+
+```
+	var locations = new Array();
+	locations.push(['Sportliche Bleistifte Versicherung', 48.7415131 , 9.1010301]);
+	locations.push(['Sensationelle Bleistifte Gefahr', 42.3586078 , -71.0590157]);
+
+```
+
+These locations can be used by our Maps Javascript. We want to create markers on the map that show the different locations and phrases. The Google Maps API provides this functionality. Calling `new google.maps.Marker()` creates a new marker. The function expects a parameter for the position, and for the map that the marker should be put on:  
+
+```
+	marker = new google.maps.Marker({
+	  position: new google.maps.LatLng(lat, long),
+	  map: map
+	});        
+
+```
+
+We want to do this for all locations that are stored in the locations-array. 
+
+```
+        // create markers
+        var marker, i;
+
+        // loop through location-array... 
+        for (i = 0; i < locations.length; i++) { 
+          // if location is not 0
+          if (locations[i][1] != 0){
+            // create new marker
+            marker = new google.maps.Marker({
+              // position is taken from locations array
+              position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+              // target is the map
+              map: map, 
+              // we also add a title that is shown if you hover over the marker
+              title: locations[i][0]
+            });        
+          }
+        }
+
+```
+
+If we want to be a little more crazy, we can also create an "infowindow" that is shown if a user clicks on a marker. To do that, we add an eventlistner to the marker (needs to be in the for-loop!): 
+
+```
+            // create local variable infowindow 
+            let infowindow = new google.maps.InfoWindow();
+            // add eventlistner (on click) to marker
+            // if marker is clicked, the anonymous function that 
+            // is provided as the third parameter is called 
+            // this anonymous function calls the setContent and the open 
+            // function of infowindow ... 
+            google.maps.event.addListener(marker, 'click', (function(marker, i) {
+              return function() {
+                infowindow.setContent(locations[i][0]);
+                infowindow.open(map, marker);
+              }
+            })(marker, i));  
+
+```
+
+If we want to put the map into the header of the file, we might want to remove the padding around the header: `<header style="padding: 0px">`. We might also want to get rid of the message "Use ... to scroll and zoom", so we add one parameter to the instantiation of the map: `gestureHandling: 'greedy' `

@@ -58,6 +58,37 @@
   $stmt = "SELECT * FROM `phrases`";
   $result = $link->query($stmt);
 
+  // array to store all phrases... 
+  $phrases = array(); 
+  if ($result->num_rows > 0){
+    while ($row = mysqli_fetch_row($result)){    
+      $phrase = array(); 
+      // fill phrase array with content from database
+      // would be nicer to do this in an object, but we haven't 
+      // talked about objects, yet. 
+      $phrase['id'] = $row[0]; 
+      $phrase['text'] = $row[1]; 
+      $phrase['name'] = $row[2];
+      $phrase['address'] = $row[3];  
+      if (!empty ($row[4])) {
+        $phrase['lat'] = $row[4]; 
+      }
+      else {
+        $phrase['lat'] = 0.0; 
+      }
+      if (!empty ($row[5])) {
+        $phrase['lng'] = $row[5]; 
+      }
+      else {
+        $phrase['lng'] = 0.0; 
+      }    
+
+      // add phrase to phrases array
+      array_push($phrases, $phrase); 
+    }
+  }
+
+
  ?>
 <!doctype html>
 <html lang="en">
@@ -72,13 +103,24 @@
     <!-- My own stylesheet -->
     <link rel="stylesheet" href="script/style.css">
 
+    <?php 
+
+      echo "<script>";
+      echo "var locations = new Array();\n";
+      foreach ($phrases as $phrase){
+        echo "locations.push(['" . str_replace("\n", "", $phrase['text']) . "', " . $phrase['lat'] . " , " . $phrase['lng'] . "]);\n";
+      }
+      echo "</script>"; 
+    ?>
 
     <title>Hello, world!</title>
   </head>
   <body>
     <!-- header image to make things a little more appealing -->
-    <header>
-      <h1>What do YOU say YES to?</h1>
+    <header style="padding: 0px">
+      <div id ="map" style="width: 100%; height: 400px">
+      </div>
+
     </header>
     <main role="main">
       <?php
@@ -161,27 +203,34 @@
 
       <hr>
 
+
       <h1>Others say YES! to... </h1>
       <table class="table-striped table">
           <th>ID</th>
           <th>Phrase</th>
           <th>Name</th>
+          <th>Address</th>
+          <th>Lat</th>
+          <th>Long</th>
           <?php
           // use $reslut variable from PHP head of file...
-          if ($result->num_rows > 0){
+          if (count($phrases) > 0){
               // get data from database line by line.
               // each line will be stored in $row
               // access to $row elements via index (0 for first element, 2 for third element)
-              while ($row = mysqli_fetch_row($result)){
+              foreach($phrases as $phrase) {
                 echo "<tr>\n";
-                echo "<td>" . $row[0] . "</td>\n";
-                echo "<td>" . $row[1] . "</td>\n";
-                echo "<td>" . $row[2] . "</td>\n";
+                echo "<td>" . $phrase['id'] . "</td>\n";
+                echo "<td>" . $phrase['text'] . "</td>\n";
+                echo "<td>" . $phrase['name'] . "</td>\n";
+                echo "<td>" . $phrase['address'] . "</td>\n";
+                echo "<td>" . $phrase['lat'] . "</td>\n";
+                echo "<td>" . $phrase['lng'] . "</td>\n";
                 echo "</tr>";
               }
           }
           else {
-              echo "<tr><td colspan='2'>No data found</td></tr>";
+              echo "<tr><td colspan='6'>No data found</td></tr>";
           }
           ?>
       </table>
@@ -194,6 +243,53 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
     <!-- Link to custom Javascript that deals with forms ... -->
     <script src="script/script.js"></script>
+
+    <script>
+      function initMap() {
+        var loc = {lat: 48.7412561, lng: 9.1008994};
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 4,
+          center: loc,
+          gestureHandling: 'greedy'          
+        });
+
+        // create markers
+        var marker, i;
+
+        // loop through location-array... 
+        for (i = 0; i < locations.length; i++) { 
+          // if location is not 0
+          if (locations[i][1] != 0){
+            // create new marker
+            marker = new google.maps.Marker({
+              // position is taken from locations array
+              position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+              // target is the map
+              map: map, 
+              // we also add a title that is shown if you hover over the marker
+              title: locations[i][0]
+            });   
+            // create local variable infowindow 
+            let infowindow = new google.maps.InfoWindow();
+            // add eventlistner (on click) to marker
+            // if marker is clicked, the anonymous function that 
+            // is provided as the third parameter is called 
+            // this anonymous function calls the setContent and the open 
+            // function of infowindow ... 
+            google.maps.event.addListener(marker, 'click', (function(marker, i) {
+              return function() {
+                infowindow.setContent(locations[i][0]);
+                infowindow.open(map, marker);
+              }
+            })(marker, i));                 
+          }
+        }
+
+      }
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=<?php echo $api_key ?>&callback=initMap">
+    </script>
 
   </body>
 </html>
