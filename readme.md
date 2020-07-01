@@ -976,7 +976,7 @@ If we want to be a little more crazy, we can also create an "infowindow" that is
 
 If we want to put the map into the header of the file, we might want to remove the padding around the header: `<header style="padding: 0px">`. We might also want to get rid of the message "Use ... to scroll and zoom", so we add one parameter to the instantiation of the map: `gestureHandling: 'greedy' `
 
-## A little bit or refactoring
+## A little bit of refactoring
 We also want to use the Geocoding functionality in our `phrase_edit.php`. As we don't want to just copy and paste the code, we will put the code to a function and store this function in a separate file. We create a file called `functions.php` in our main folder. 
 
 We take the geocode functioality and put it into a function within that file: 
