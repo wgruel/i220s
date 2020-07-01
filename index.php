@@ -16,9 +16,16 @@
       // put together the message that is to be saved. 
       $text = $_GET['phrase_01'] . " " . $_GET['phrase_02'] . " " . $_GET['phrase_03'] . "\n";
       $name = $_GET['nameField'];
+
+      // get address .... 
+      $address = urldecode($_GET['address']);
+
+      // set default values for lat and long
+      $lat = 0.0; 
+      $lng = 0.0;      
       // write info to a database
       // create sql-statements
-      $stmt = "INSERT INTO `phrases` (`id`, `phrase`, `name`) VALUES (NULL, '" . $text . "', '" . $name . "');";
+      $stmt = "INSERT INTO `phrases` (`id`, `phrase`, `name`, `address`, `lat`, `lng`) VALUES (NULL, '" . $text . "', '" . $name . "' ,'" . $address . "' ,'" . $lat . "' ,'" . $lng . "')";
       // execute statement
       $result = $link->query($stmt);
     }
@@ -125,6 +132,11 @@
               <div class="invalid-feedback">Das kannst Du besser. Schreib hier doch was rein.</div>
             </div>
           </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <input type="text" class="form-control" id="address" name="address" placeholder="Hauptstrasse 1, 12345 Musterstadt">
+            </div>
+          </div>          
         </div>
 
         <button type="submit" class="btn btn-primary" value="1" name="btn-save">Say Yes!</button>

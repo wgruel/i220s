@@ -682,3 +682,73 @@ If our update was successful, we might want to show this to the user. We put a l
 ```
 
 That's basically it. We created a phrase-generator application that can create, read, update and delete records in a database. Nice!
+
+
+## Use Google Maps API
+
+### Extend Phrases 
+
+Go to PHP MyAdmin and create three fields for the phrases-table called 'address', 'lat' and 'lng'. The last two parameters will contain latitude and longitude. This data is required to display the location on the map. We get it from the Google API later.
+
+```
+ALTER TABLE `phrases` ADD `address` TEXT NOT NULL, ADD `lat` VARCHAR(15) NOT NULL, ADD `lng` VARCHAR(15) NOT NULL ;
+```
+
+Usually, we would use number-fields with lat and lng - but to make things easier, we use varchar, so we don't have to deal with spaces etc.
+
+Now, we need some fields to enter / update the address. Latitude and longitude will be computed later, so we don't need an input field.
+
+In index.php, we add a textfield to the form: 
+```
+            <div class="form-group">
+              <label for="address">Address:</label>
+              <input type="text" class="form-control" id="address" name="address">
+            </div>   
+```
+
+We have to adapt the variable mapping and the insert statements. In index.php, this looks like: 
+```
+    $address = $_GET['address'];
+    $lat = 0.0; 
+    $lng = 0.0;
+
+    // create SQL statement
+    $sql_query = "INSERT INTO `phrases`(`username`, `password`, `email`, `address`, `lat`, `lng`) ";
+    $sql_query .= "VALUES('". $username ."','" . $password . "','" . $email . "' ,'" . $address . "' ,'" . $lat . "' ,'" . $lng . "')";
+
+```
+
+We also change the `phrase_edit.php` in the admin folder: 
+
+```
+    $phrase = $_GET['phrase'];
+    $address = $_GET['address'];
+    // set lat and lng to 0 - will be updated later...
+    $lat = 0.0;
+    $lng = 0.0;
+ 
+    // we create an update statement...
+    $stmt = "UPDATE `phrases` SET 
+        `phrases`.`phrase` = '" . $phase . "',      
+        `address` = '" . $address . "',
+        `lat` = '" . $lat . "',
+        `lng` = '" . $lng . "'  
+        WHERE id = " . $_GET['edit-id']; 
+
+
+```
+
+We also add an address-field to the form. If an adress has been entered, we display it (`$row[3]`)
+
+```
+        <div class="form-group">
+          <label for="address">Address:</label>
+          <input type="text" class="form-control" id="address" name="address" value="<?php echo $row[3]?>">
+        </div>
+```
+
+## Google-Maps
+What we want to do next is to display the map on the edit page... 
+
+We will compute lat and lng with the help of the Google Maps API. Therefore, we want to create an API call that looks like:  
+`https://maps.googleapis.com/maps/api/geocode/json?address=Nobelstr.+10%2C+Stuttgart&key=YOUR_API_KEY`

@@ -11,8 +11,21 @@
   
   // if button has been pressed, ...
   if (isset($_GET['btn-save'])){
-    // we create an update statement... 
-    $stmt = "UPDATE `phrases` SET `phrases`.`phrase` = '" . $_GET['phrase'] . "' WHERE id = " . $_GET['edit-id']; 
+    
+    $phrase = $_GET['phrase'];
+    $address = $_GET['address'];
+    // set lat and lng to 0 - will be updated later...
+    $lat = 0.0;
+    $lng = 0.0;
+ 
+    // we create an update statement...
+    $stmt = "UPDATE `phrases` SET 
+        `phrases`.`phrase` = '" . $phase . "',      
+        `address` = '" . $address . "',
+        `lat` = '" . $lat . "',
+        `lng` = '" . $lng . "'  
+        WHERE id = " . $_GET['edit-id']; 
+
     // ... and execute it... 
     $update_result = $link->query($stmt); 
     if ($update_result > 0) {
@@ -62,6 +75,10 @@
         <div class="form-group">
             <input type="hidden" name="edit-id" value="<?php echo $_GET['edit-id'] ?>">
             <input type="text" name="phrase" class="form-control input-lg" value="<?php echo $text ?>">
+        </div>
+        <div class="form-group">
+              <label for="address">Address:</label>
+              <input type="text" class="form-control" id="address" name="address" value="<?php echo $row[3]?>">
         </div>
         <button type="submit" class="btn btn-primary" value="1" name="btn-save">Save</button>
 
